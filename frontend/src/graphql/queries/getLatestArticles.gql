@@ -1,0 +1,8 @@
+query GetLatestArticles {
+  articles(pagination: { limit: 5 }, sort: "createdAt:desc") {
+    id
+    title
+    mainPictureUrl
+    createdAt
+  }
+}
