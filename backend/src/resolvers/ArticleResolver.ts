@@ -1,13 +1,6 @@
-import {
-  Arg,
-  Field,
-  InputType,
-  Mutation,
-  Query,
-  Resolver,
-} from "type-graphql";
+import { Arg, Field, InputType, Mutation, Query, Resolver } from "type-graphql";
+import { Raw } from "typeorm";
 import { Article } from "../entities/Article";
-import { Category } from "../entities/Category";
 import { ObjectId } from "../types";
 
 @InputType()
@@ -21,62 +14,58 @@ class CreateArticleInput {
   @Field()
   body!: string;
 
-  @Field(() => Number)
-  category!: number;
-}
-
-@InputType()
-class PaginationInput {
-  @Field()
-  limit!: number;
+  @Field(() => ObjectId)
+  category: ObjectId;
 }
 
 @Resolver(Article)
 export class ArticleResolver {
-
   @Query(() => [Article])
   async articles(
-    @Arg("pagination", () => PaginationInput, { nullable: true })
-    pagination?: PaginationInput,
-
-    @Arg("sort", () => String, { nullable: true })
-    sort?: string
+    @Arg("title", { nullable: true }) title?: string,
+    @Arg("limit", { nullable: true }) limit?: number,
+    @Arg("offset", { nullable: true }) offset?: number
   ): Promise<Article[]> {
-
-    const limit = pagination?.limit ?? 10;
-
-    let order: any = { createdAt: "DESC" };
-
-    if (sort) {
-      const [field, direction] = sort.split(":");
-      order = { [field]: direction.toUpperCase() };
-    }
+    const where = title
+      ? { title: Raw((alias) => `LOWER(${alias}) LIKE LOWER(:title)`, { title: `%${title}%` }) }
+      : {};
 
     return Article.find({
-      relations: { category: true },
-      take: limit,
-      order,
+      where,
+      relations: ["category"],
+      order: { createdAt: "DESC" },
+      take: limit ?? 10,
+      skip: offset ?? 0,
     });
   }
 
+  @Query(() => Article, { nullable: true })
+  async article(@Arg("id") id: number): Promise<Article | null> {
+    return Article.findOne({ where: { id }, relations: ["category"] });
+  }
+
   @Mutation(() => Article)
-  async createArticle(
-    @Arg("data") data: CreateArticleInput
-  ): Promise<Article> {
-
-    const category = await Category.findOneByOrFail({
-      id: data.category,
+  async createArticle(@Arg("data") data: CreateArticleInput): Promise<Article> {
+    const article = Article.create(data);
+    const savedArticle = await article.save();
+    // Reload article with category relation
+    const articleWithCategory = await Article.findOne({
+      where: { id: savedArticle.id },
+      relations: ["category"],
     });
+    if (!articleWithCategory) {
+      throw new Error("Failed to load created article");
+    }
+    return articleWithCategory;
+  }
 
-    const article = Article.create({
-      mainPictureUrl: data.mainPictureUrl,
-      title: data.title,
-      body: data.body,
-      category,
-    });
-
-    await article.save();
-
-    return article;
+  @Mutation(() => Boolean)
+  async deleteArticle(@Arg("id") id: number): Promise<boolean> {
+    const article = await Article.findOne({ where: { id } });
+    if (article) {
+      await article.remove();
+      return true;
+    }
+    return false;
   }
 }

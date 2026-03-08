@@ -1,11 +1,5 @@
-import { Field, ObjectType } from "type-graphql";
-import {
-  BaseEntity,
-  Column,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-} from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, BaseEntity } from "typeorm";
+import { ObjectType, Field } from "type-graphql";
 import { Article } from "./Article";
 
 @ObjectType()
@@ -20,9 +14,6 @@ export class Category extends BaseEntity {
   name!: string;
 
   @Field(() => [Article], { nullable: true })
-  @OneToMany(
-    () => Article,
-    (article) => article.category,
-  )
+  @OneToMany(() => Article, (article) => article.category)
   articles?: Article[];
 }

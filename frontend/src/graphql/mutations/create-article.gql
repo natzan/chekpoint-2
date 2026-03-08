@@ -1,0 +1,15 @@
+mutation CreateArticle($data: CreateArticleInput!) {
+  createArticle(data: $data) {
+    id
+    title
+    body
+    mainPictureUrl
+    createdAt
+    updatedAt
+    category {
+      id
+      name
+    }
+  }
+}
+

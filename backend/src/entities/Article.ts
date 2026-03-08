@@ -1,13 +1,5 @@
-import { Field, ObjectType } from "type-graphql";
-import {
-  BaseEntity,
-  Column,
-  CreateDateColumn,
-  Entity,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, BaseEntity } from "typeorm";
+import { ObjectType, Field } from "type-graphql";
 import { Category } from "./Category";
 
 @ObjectType()
@@ -30,11 +22,7 @@ export class Article extends BaseEntity {
   body!: string;
 
   @Field(() => Category)
-  @ManyToOne(
-    () => Category,
-    (category) => category.articles,
-    { nullable: true },
-  )
+  @ManyToOne(() => Category, (category) => category.articles, { nullable: true })
   category?: Category;
 
   @Field()
